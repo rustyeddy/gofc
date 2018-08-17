@@ -3,6 +3,7 @@ package ofp13
 import (
 	"encoding/binary"
 	"errors"
+	"fmt"
 	"net"
 )
 
@@ -19,6 +20,9 @@ func Parse(packet []byte) (msg OFMessage) {
 		msg.Parse(packet)
 	case OFPT_ECHO_REPLY:
 		msg = NewOfpEchoReply()
+		msg.Parse(packet)
+	case OFPT_EXPERIMENTER:
+		msg = NewOfpExperimentor()
 		msg.Parse(packet)
 	case OFPT_FEATURES_REPLY:
 		msg = NewOfpFeaturesReply()
@@ -95,6 +99,11 @@ func (h *OfpHeader) Parse(packet []byte) {
 /// Return OfpHeader's size.
 func (h *OfpHeader) Size() int {
 	return 8
+}
+
+// String prints a short single line summary of this OF message
+func (h *OfpHeader) String() string {
+	return fmt.Sprintf("Vers %d - %d len %d %lx\n", h.Version, h.Type, h.Length, h.Xid)
 }
 
 /*****************************************************/
@@ -199,6 +208,14 @@ func (m *OfpHello) Size() int {
 		size += e.Size()
 	}
 	return size
+}
+
+/*****************************************************/
+/* OfpExperimentor                                   */
+/*****************************************************/
+func NewOfpExperimentor() *OfpHeader {
+	m := NewOfpHeader(OFPT_GET_CONFIG_REQUEST)
+	return &m
 }
 
 /*****************************************************/

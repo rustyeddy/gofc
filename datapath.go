@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"net"
 
+	log "github.com/rustyeddy/logrus"
+
 	"github.com/rustyeddy/gofc/ofprotocol/ofp13"
 )
 
@@ -39,7 +41,7 @@ func (dp *Datapath) sendLoop() {
 			_, err := dp.conn.Write(byteData)
 			if err != nil {
 				fmt.Println("failed to write conn")
-				fmt.Println(err)
+				fmt.Println("sendLoop err ", err)
 				return
 			}
 		default:
@@ -55,7 +57,7 @@ func (dp *Datapath) recvLoop() {
 		size, err := dp.conn.Read(buf)
 		if err != nil {
 			fmt.Println("failed to read conn")
-			fmt.Println(err)
+			fmt.Println("recvLoop err ", err)
 			return
 		}
 
@@ -78,6 +80,7 @@ func (dp *Datapath) handlePacket(buf []byte) {
 		dp.Send(featureReq)
 	} else {
 		// dispatch handler
+		//fmt.Printf(" dispatch packet %+v \n", msg)
 		dp.dispatchHandler(msg)
 	}
 }
@@ -107,15 +110,16 @@ func (dp *Datapath) dispatchHandler(msg ofp13.OFMessage) {
 					obj.HandleBarrierReply(msgi, dp)
 				}
 			default:
+				log.Fatalf(" unknown header %#v ", msgi)
 			}
 
-		// Recv Error
+			// Recv Error
 		case *ofp13.OfpErrorMsg:
 			if obj, ok := app.(Of13ErrorMsgHandler); ok {
 				obj.HandleErrorMsg(msgi, dp)
 			}
 
-		// Recv RoleReply
+			// Recv RoleReply
 		case *ofp13.OfpRole:
 			if obj, ok := app.(Of13RoleReplyHandler); ok {
 				obj.HandleRoleReply(msgi, dp)
@@ -216,6 +220,8 @@ func (dp *Datapath) dispatchHandler(msg ofp13.OFMessage) {
 
 		default:
 			fmt.Println("UnSupport Message")
+			log.Error("Unsupported message: ")
+			log.Fatalf("%#v", msg)
 		}
 	}
 }

@@ -5,6 +5,7 @@ import (
 	"net"
 
 	"github.com/rustyeddy/gofc/ofprotocol/ofp13"
+	log "github.com/rustyeddy/logrus"
 )
 
 /**
@@ -26,7 +27,7 @@ func (c *OFController) HandleSwitchFeatures(msg *ofp13.OfpSwitchFeatures, dp *Da
 
 	ethdst, _ := ofp13.NewOxmEthDst("00:00:00:00:00:00")
 	if ethdst == nil {
-		fmt.Println(ethdst)
+		log.Info("  ~ ethdst prob ", ethdst)
 		return
 	}
 	match := ofp13.NewOfpMatch()
@@ -54,12 +55,12 @@ func (c *OFController) HandleSwitchFeatures(msg *ofp13.OfpSwitchFeatures, dp *Da
 		instructions,
 	)
 
-	fmt.Println("Send flow mod .. ")
+	fmt.Printf("  ~ send flow mod .. %#v ", fm)
 
 	// send FlowMod
 	dp.Send(fm)
+	fmt.Println("  ~ create and send aggregate ... ")
 
-	fmt.Println("create and send aggregate")
 	// Create and send AggregateStatsRequest
 	mf := ofp13.NewOfpMatch()
 	mf.Append(ethdst)
@@ -68,18 +69,16 @@ func (c *OFController) HandleSwitchFeatures(msg *ofp13.OfpSwitchFeatures, dp *Da
 }
 
 func (c *OFController) HandleAggregateStatsReply(msg *ofp13.OfpMultipartReply, dp *Datapath) {
-	fmt.Println("Handle AggregateStats")
+	log.Info("Handle AggregateStats")
 	for _, mp := range msg.Body {
 		if obj, ok := mp.(*ofp13.OfpAggregateStats); ok {
-			fmt.Println(obj.PacketCount)
-			fmt.Println(obj.ByteCount)
-			fmt.Println(obj.FlowCount)
+			fmt.Printf(" packets {%d} bytes {%d} flows {%d}\n",
+				obj.PacketCount, obj.ByteCount, obj.FlowCount)
 		}
 	}
 }
 
 func (c *OFController) HandleEchoRequest(msg *ofp13.OfpHeader, dp *Datapath) {
-	fmt.Println("recv EchoReq")
 	// send EchoReply
 	echo := ofp13.NewOfpEchoReply()
 	(*dp).Send(echo)
@@ -87,17 +86,17 @@ func (c *OFController) HandleEchoRequest(msg *ofp13.OfpHeader, dp *Datapath) {
 
 func (c *OFController) ConnectionUp() {
 	// handle connection up
-	fmt.Printf("  TODO Connection Up ")
+	log.Info("  TODO Connection Up ")
 }
 
 func (c *OFController) ConnectionDown() {
 	// handle connection down
-	fmt.Printf("  TODO Connection Down ")
+	log.Info("  TODO Connection Down ")
 }
 
 func (c *OFController) sendEchoLoop() {
 	// send echo request forever
-	fmt.Printf("  TODO sendEchoLoop")
+	log.Info("  TODO sendEchoLoop")
 }
 
 func ServerLoop(serverStr string) {
@@ -120,7 +119,7 @@ func ServerLoop(serverStr string) {
 		if err != nil {
 			return
 		}
-		fmt.Println("  connection to handle ")
+		log.Info("  connection to handle ")
 		go handleConnection(conn)
 	}
 }
@@ -129,11 +128,12 @@ func ServerLoop(serverStr string) {
  * hanleConnection hello style :)
  */
 func handleConnection(conn *net.TCPConn) {
+
 	// send hello
 	hello := ofp13.NewOfpHello()
 	_, err := conn.Write(hello.Serialize())
 	if err != nil {
-		fmt.Println(err)
+		fmt.Println("hello write ", err)
 	}
 
 	// create datapath

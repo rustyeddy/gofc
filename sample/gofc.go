@@ -27,7 +27,7 @@ func main() {
 	// regist app
 	ofc := NewSampleController()
 
-	fmt.Printf("ofc: %#v", ofc)
+	fmt.Printf("ofc: %+v\n", ofc)
 	gofc.GetAppManager().RegistApplication(ofc)
 
 	// start server
